@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanjeevani Care | Full Hospital & Admin System</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            /* Brand Colors */
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --dark: #1e293b;
+            --deep-blue: #002e5b;
+            --gold: #b39359;
+            
+            /* UI Colors */
+            --light-bg: #f0f9ff;
+            --white: #ffffff;
+            --gray: #64748b;
+            --sidebar-bg: #0f172a;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
+        body { background: var(--white); color: var(--gray); overflow-x: hidden; }
+
+        /* --- Animations & Utilities --- */
+        .page { display: none; animation: fadeIn 0.5s ease-in-out; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Toast Notification --- */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast {
+            background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--primary); display: flex; align-items: center; gap: 10px;
+            animation: slideIn 0.3s ease-out; min-width: 300px;
+        }
+        .toast.success { border-left-color: var(--success); }
+        .toast.error { border-left-color: var(--danger); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* ================= HEADER & NAV ================= */
+        header {
+            padding: 15px 5%; display: flex; justify-content: space-between; align-items: center;
+            background: var(--white); position: sticky; top: 0; z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+        .logo { font-size: 1.5rem; font-weight: 700; color: var(--dark); cursor: pointer; display: flex; align-items: center; gap: 8px; z-index: 1001; }
+        .logo span { color: var(--primary); }
+        
+        .nav-menu { display: flex; gap: 25px; list-style: none; align-items: center; }
+        .nav-menu a { text-decoration: none; color: var(--dark); font-weight: 500; font-size: 0.95rem; transition: 0.3s; cursor: pointer; }
+        .nav-menu a:hover, .nav-menu a.active { color: var(--primary); }
+        
+        .btn-portal { background: var(--primary); color: white; padding: 10px 22px; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer; transition: 0.3s; display: inline-block; }
+        .btn-portal:hover { background: var(--primary-dark); box-shadow: 0 5px 15px rgba(14, 165, 233, 0.3); }
+
+        /* --- Mobile Toggle Button --- */
+        .mobile-toggle { display: none; font-size: 1.5rem; color: var(--dark); cursor: pointer; z-index: 1001; }
+
+        /* ================= RESPONSIVE HEADER ================= */
+        @media (max-width: 991px) {
+            .mobile-toggle { display: block; }
+            
+            .nav-menu {
+                position: fixed; top: 0; right: -100%;
+                width: 80%; height: 100vh; background: var(--white);
+                flex-direction: column; justify-content: center;
+                box-shadow: -5px 0 30px rgba(0,0,0,0.1);
+                transition: 0.4s ease-in-out; z-index: 1000;
+            }
+            
+            .nav-menu.active { right: 0; }
+            .nav-menu li { margin: 15px 0; text-align: center; }
+            .btn-portal.nav-btn-mobile { display: block; margin: 20px auto; }
+        }
+        
+        @media (min-width: 992px) {
+            .btn-portal.nav-btn-mobile { display: none; }
+        }
+
+        /* ================= PUBLIC PAGES STYLING ================= */
+        .hero { padding: 80px 5%; display: flex; align-items: center; background: var(--light-bg); min-height: 85vh; }
+        .hero-text { flex: 1; }
+        .hero-text h1 { font-size: 3rem; color: var(--dark); line-height: 1.1; margin-bottom: 20px; }
+        .hero-text h1 span { color: var(--primary); }
+        .hero-img { flex: 1; text-align: right; }
+        .hero-img img { width: 100%; max-width: 500px; animation: float 3s ease-in-out infinite; border-radius: 20px; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        .section { padding: 60px 5%; text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+        .card { padding: 40px; border-radius: 20px; background: white; border: 1px solid #e2e8f0; transition: 0.3s; text-align: center; }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
+
+        /* About Page */
+        .about-stats-box { position: absolute; bottom: -30px; right: -20px; background: #fff; padding: 25px; border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); z-index: 3; text-align: center; border-left: 5px solid var(--gold); }
+
+        /* Doctors Page */
+        .doctors-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+        .doc-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.05); transition: 0.4s; position: relative; }
+        .doc-img-wrapper { height: 320px; overflow: hidden; position: relative; }
+        .doc-img-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        .doc-card:hover img { transform: scale(1.1); }
+        .doc-overlay { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); display: flex; justify-content: center; gap: 15px; opacity: 0; transition: 0.3s; }
+        .doc-card:hover .doc-overlay { opacity: 1; transform: translateY(-10px); }
+        .doc-overlay a { width: 40px; height: 40px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--deep-blue); text-decoration: none; transition: 0.2s; }
+        .doc-overlay a:hover { background: var(--primary); color: white; }
+
+        /* Contact Page */
+        .contact-container { display: flex; max-width: 1100px; margin: 40px auto; background: white; border-radius: 30px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.1); }
+        .contact-info { flex: 1; background: var(--deep-blue); padding: 60px; color: white; text-align: left; }
+        .contact-form { flex: 1.5; padding: 60px; text-align: left; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 15px; border: 1px solid var(--border); border-radius: 12px; outline: none; transition: 0.3s; background: #f8fafc; }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--primary); background: white; }
+
+        /* ================= LOGIN PAGE ================= */
+        .login-wrap { 
+            height: 100vh; display: flex; align-items: center; justify-content: center; 
+            background: linear-gradient(rgba(0,46,91,0.8), rgba(0,46,91,0.8)), 
+                        url('https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=1600'); 
+            background-size: cover; background-position: center;
+        }
+        .login-box { 
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 50px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4); width: 90%; max-width: 420px; text-align: center; color: white;
+        }
+        .login-box input { width: 100%; padding: 15px; margin: 10px 0; background: rgba(255, 255, 255, 0.95); border: none; border-radius: 10px; outline: none; color: var(--dark); font-size: 1rem; }
+
+        /* ================= ADMIN DASHBOARD (RESPONSIVE) ================= */
+        .admin-layout { display: flex; height: 100vh; overflow: hidden; background: #f1f5f9; position: relative; }
+        
+        .sidebar { 
+            width: 260px; background: var(--sidebar-bg); color: white; padding: 25px; 
+            display: flex; flex-direction: column; flex-shrink: 0; 
+            transition: transform 0.3s ease-in-out;
+            position: absolute; left: 0; top: 0; bottom: 0; z-index: 50;
+        }
+        
+        .sidebar h3 { color: var(--primary); margin-bottom: 40px; font-size: 1.2rem; font-weight: 700; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        .sidebar a { display: flex; align-items: center; gap: 12px; color: #94a3b8; text-decoration: none; padding: 14px 18px; margin: 5px 0; border-radius: 10px; transition: 0.3s; cursor: pointer; }
+        .sidebar a:hover, .sidebar a.active-link { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); }
+        
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; margin-left: 260px; width: calc(100% - 260px); }
+        .admin-sec { display: none; animation: fadeIn 0.3s ease; }
+        .admin-sec.active { display: block; }
+
+        /* Dashboard Overview Styles */
+        .overview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .status-badge { display: inline-flex; align-items: center; gap: 8px; background: white; padding: 8px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; color: var(--success); box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .pulse { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 0 rgba(16, 185, 129, 0.4); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+        .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 30px; }
+        
+        .glass-card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); position: relative; overflow: hidden; transition: 0.3s; }
+        .glass-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.06); }
+        
+        .card-icon { position: absolute; right: 20px; top: 20px; font-size: 2.5rem; opacity: 0.05; color: var(--dark); transition: 0.3s; }
+        .glass-card:hover .card-icon { opacity: 0.1; transform: scale(1.1); }
+
+        /* Bar Chart CSS */
+        .chart-container { display: flex; align-items: flex-end; height: 180px; gap: 12px; padding-top: 20px; }
+        .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+        .bar { width: 100%; background: #e2e8f0; border-radius: 6px; position: relative; transition: height 1s ease; }
+        .bar.active { background: var(--primary); }
+        .bar-group span { font-size: 0.75rem; color: var(--gray); font-weight: 500; }
+
+        /* Tables */
+        .table-responsive { overflow-x: auto; }
+        .table-container { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.03); min-width: 600px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; text-align: left; padding: 18px; color: var(--dark); font-weight: 600; font-size: 0.9rem; border-bottom: 2px solid var(--border); white-space: nowrap; }
+        td { padding: 18px; border-bottom: 1px solid #f1f5f9; color: var(--gray); font-size: 0.95rem; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        .status-pill { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-new { background: #fff7ed; color: #c2410c; }
+        .status-active { background: #dcfce7; color: #15803d; }
+
+        /* Mobile Sidebar Toggle */
+        .admin-header-toggle { display: none; font-size: 1.5rem; color: var(--dark); cursor: pointer; margin-bottom: 20px; }
+
+        /* ================= RESPONSIVE MEDIA QUERIES ================= */
+        @media (max-width: 991px) {
+            .hero { flex-direction: column; text-align: center; padding-top: 40px; }
+            .hero-img { margin-top: 50px; }
+            .contact-container { flex-direction: column; }
+            .contact-info, .contact-form { padding: 30px; }
+            
+            /* Footer adjustments */
+            .footer-box { grid-template-columns: 1fr; gap: 40px; }
+            .footer-links { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            /* Admin Mobile Styles */
+            .sidebar { transform: translateX(-100%); width: 260px; box-shadow: 5px 0 20px rgba(0,0,0,0.2); }
+            .sidebar.mobile-active { transform: translateX(0); }
+            .main-content { margin-left: 0; width: 100%; padding: 15px; }
+            .admin-header-toggle { display: block; }
+            
+            /* Table scrolling */
+            .table-responsive { border-radius: 20px; border: 1px solid var(--border); }
+            
+            /* Charts adjust */
+            .chart-container { overflow-x: auto; justify-content: flex-start; min-width: 400px; }
+        }
+
+        @media (max-width: 480px) {
+            .footer-links { grid-template-columns: 1fr; }
+            .hero-text h1 { font-size: 2.2rem; }
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        /* ================= FOOTER ================= */
+        .premium-footer { padding: 60px 5% 20px; background: var(--dark); color: white; margin-top: 0; }
+        .footer-box { display: grid; grid-template-columns: 1fr 2fr; gap: 50px; margin-bottom: 50px; }
+        .footer-left p { color: #94a3b8; margin: 20px 0; line-height: 1.7; max-width: 400px; }
+        .footer-brand { font-size: 1.8rem; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .footer-brand i { color: var(--primary); }
+        .footer-social { display: flex; gap: 15px; }
+        .footer-social a { width: 40px; height: 40px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; border-radius: 50%; color: white; text-decoration: none; transition: 0.3s; }
+        .footer-social a:hover { background: var(--primary); transform: translateY(-3px); }
+        .footer-links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+        .footer-links h4 { margin-bottom: 25px; font-size: 1.1rem; color: var(--white); }
+        .footer-links a { display: block; color: #94a3b8; text-decoration: none; margin-bottom: 12px; font-size: 0.95rem; transition: 0.3s; cursor: pointer; }
+        .footer-links a:hover { color: var(--primary); padding-left: 5px; }
+        .footer-strip { text-align: center; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); color: #64748b; font-size: 0.9rem; }
+
+    </style>
+</head>
+<body>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- HEADER -->
+    <header id="site-header">
+        <div class="logo" onclick="showPage('home-page')"><i class="fa-solid fa-notes-medical"></i> Sanjeevani<span>Care</span></div>
+        
+        <ul class="nav-menu" id="main-nav">
+            <li><a onclick="navigate('home-page')">Home</a></li>
+            <li><a onclick="navigate('about-page')">About</a></li>
+            <li><a onclick="navigate('services-page')">Services</a></li>
+            <li><a onclick="navigate('doctors-page')">Doctors</a></li>
+            <li><a onclick="navigate('contact-page')">Contact</a></li>
+            <li><button onclick="navigate('login-page')" class="btn-portal nav-btn-mobile">Admin Login</button></li>
+        </ul>
+
+        <div style="display:flex; align-items:center; gap:15px;">
+            <button onclick="showPage('login-page')" class="btn-portal" style="display: block; @media (max-width:991px){display:none;}">Admin Login</button>
+            <div class="mobile-toggle" onclick="toggleMobileMenu()">
+                <i class="fa-solid fa-bars"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- HOME PAGE -->
+    <div id="home-page" class="page active">
+        <section class="hero">
+            <div class="hero-text">
+                <span style="color:var(--primary); font-weight:700; letter-spacing:2px;">BEST IN HEALTHCARE</span>
+                <h1>Trust the <span>Experts</span>, Live Healthy</h1>
+                <p>Sanjeevani Care provides world-class medical facilities with a touch of humanity. Experience the future of medicine today.</p>
+                <div style="display:flex; gap:15px; margin-top:30px; flex-wrap:wrap; justify-content:center;">
+                    <button onclick="showPage('contact-page')" class="btn-portal" style="padding:15px 35px; font-size:1rem;">Book Appointment</button>
+                    <button onclick="showPage('services-page')" class="btn-portal" style="background:white; color:var(--dark); border:1px solid #ddd; padding:15px 35px;">Our Services</button>
+                </div>
+            </div>
+            <div class="hero-img">
+                <img src="https://raw.githubusercontent.com/codewithsadee/doclab/master/assets/images/hero-banner.png" alt="Doctor">
+            </div>
+        </section>
+
+        <section class="section" style="margin-top:-50px; position:relative; z-index:10;">
+            <div class="grid">
+                <div class="card">
+                    <i class="fa-solid fa-truck-medical" style="font-size:3rem; color:var(--primary); margin-bottom:15px;"></i>
+                    <h3>24/7 Emergency</h3>
+                    <p>Ambulance and trauma care available round the clock.</p>
+                </div>
+                <div class="card">
+                    <i class="fa-solid fa-user-doctor" style="font-size:3rem; color:var(--primary); margin-bottom:15px;"></i>
+                    <h3>Expert Doctors</h3>
+                    <p>150+ internationally trained specialists at your service.</p>
+                </div>
+                <div class="card">
+                    <i class="fa-solid fa-microscope" style="font-size:3rem; color:var(--primary); margin-bottom:15px;"></i>
+                    <h3>Advanced Lab</h3>
+                    <p>Precision diagnostics with the latest robotic technology.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" style="background:var(--dark); color:white; padding:60px 5%;">
+            <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+                <div style="text-align:center;">
+                    <h2 style="font-size:3rem; color:var(--primary);">25+</h2>
+                    <p style="color:#94a3b8;">Years Excellence</p>
+                </div>
+                <div style="text-align:center;">
+                    <h2 style="font-size:3rem; color:var(--primary);">1M+</h2>
+                    <p style="color:#94a3b8;">Happy Patients</p>
+                </div>
+                <div style="text-align:center;">
+                    <h2 style="font-size:3rem; color:var(--primary);">50+</h2>
+                    <p style="color:#94a3b8;">Specialized Clinics</p>
+                </div>
+                <div style="text-align:center;">
+                    <h2 style="font-size:3rem; color:var(--primary);">100%</h2>
+                    <p style="color:#94a3b8;">Care & Safety</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 style="font-size:2.5rem; color:var(--dark);">Specialized <span style="color:var(--primary);">Departments</span></h2>
+            <p style="margin-bottom:40px;">Providing excellence across all medical fields.</p>
+            <div class="grid">
+                <div class="card">
+                    <i class="fa-solid fa-heart-pulse" style="font-size:2rem; color:red;"></i>
+                    <h3>Cardiology</h3>
+                    <p>Heart care with advanced surgery options.</p>
+                </div>
+                <div class="card">
+                    <i class="fa-solid fa-brain" style="font-size:2rem; color:purple;"></i>
+                    <h3>Neurology</h3>
+                    <p>Expert treatment for brain and spine disorders.</p>
+                </div>
+                <div class="card">
+                    <i class="fa-solid fa-baby" style="font-size:2rem; color:orange;"></i>
+                    <h3>Pediatrics</h3>
+                    <p>Specialized care for your little ones.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ABOUT PAGE -->
+    <div id="about-page" class="page">
+        <section class="section" style="padding: 100px 5%; background: linear-gradient(to bottom, #ffffff, #f8fafc);">
+            <div style="display: flex; align-items: center; gap: 40px; flex-wrap: wrap;">
+                <div style="flex: 1; position: relative; min-width: 300px;">
+                    <div style="position: absolute; top: -15px; left: -15px; width: 80px; height: 80px; border-top: 6px solid var(--gold); border-left: 6px solid var(--gold); z-index: 1; border-radius: 15px 0 0 0;"></div>
+                    <div style="overflow: hidden; border-radius: 20px; box-shadow: 25px 25px 60px rgba(0,0,0,0.08); position: relative; z-index: 2;">
+                        <img src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=1000" style="width: 100%; display: block; transition: transform 0.6s ease;" alt="Sanjeevani Care Infrastructure">
+                    </div>
+                    <div class="about-stats-box">
+                        <h4 style="font-size: 2rem; color: var(--deep-blue); margin: 0;">25+</h4>
+                        <p style="font-size: 0.8rem; color: var(--gray); font-weight: 700; margin: 0; text-transform: uppercase;">Years Excellence</p>
+                    </div>
+                </div>
+                <div style="flex: 1.2; text-align: left;">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <span style="width: 40px; height: 2px; background: var(--gold);"></span>
+                        <h4 style="color: var(--gold); letter-spacing: 3px; font-weight: 700; font-size: 0.9rem; margin: 0; text-transform: uppercase;">Established 1998</h4>
+                    </div>
+                    <h2 style="font-family: 'Playfair Display', serif; font-size: 3rem; color: var(--deep-blue); margin-bottom: 25px; line-height: 1.1; font-weight: 800;">
+                        Redefining <span style="color: var(--gold);">Care</span> <br>Beyond Limits
+                    </h2>
+                    <p style="font-size: 1rem; color: #475569; margin-bottom: 25px; line-height: 1.8; text-align: justify;">
+                        Sanjeevani Care is more than a medical facility; it is a legacy of healing built on trust. For over two decades, we have pushed the boundaries of medical innovation, ensuring that every patient receives the gold standard of personalized healthcare.
+                    </p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 40px;">
+                        <div style="display: flex; align-items: center; gap: 15px; padding: 10px;">
+                            <i class="fa fa-award" style="color: var(--gold); font-size: 1.5rem;"></i>
+                            <span style="font-weight: 700; color: #1e293b;">NABH Accredited</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px; padding: 10px;">
+                            <i class="fa fa-clock" style="color: var(--gold); font-size: 1.5rem;"></i>
+                            <span style="font-weight: 700; color: #1e293b;">24/7 Emergency</span>
+                        </div>
+                    </div>
+                    <button onclick="showPage('services-page')" style="background: var(--deep-blue); color: white; border: none; padding: 18px 40px; border-radius: 50px; font-weight: 700; cursor: pointer; transition: 0.4s; box-shadow: 0 10px 25px rgba(0,46,91,0.2);">
+                        Explore Our Facilities <i class="fa fa-arrow-right" style="margin-left: 10px;"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- SERVICES PAGE -->
+    <div id="services-page" class="page">
+        <section class="section" style="background: #fdfdfd; padding: 100px 5%;">
+            <div style="margin-bottom: 60px;">
+                <h4 style="color: var(--gold); letter-spacing: 2px; font-weight: 700; margin-bottom: 10px;">OUR EXPERTISE</h4>
+                <h2 style="font-family: 'Playfair Display', serif; font-size: 3rem; color: var(--deep-blue);">Centres of Excellence</h2>
+                <div style="width: 60px; height: 3px; background: var(--gold); margin: 20px auto;"></div>
+                <p style="color: var(--gray); max-width: 700px; margin: auto;">Sanjeevani Care brings together world-class clinicians and revolutionary technology to provide specialized treatment across 30+ departments.</p>
+            </div>
+
+            <div class="grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px; margin-top: 60px;">
+                <div class="card" style="padding: 50px 30px; border: none; border-radius: 0; border-bottom: 5px solid var(--gold); box-shadow: 0 15px 40px rgba(0,0,0,0.05); transition: 0.4s; position: relative; overflow: hidden; text-align: left;">
+                    <div style="font-size: 3.5rem; color: var(--deep-blue); margin-bottom: 25px; opacity: 0.8;"><i class="fa-solid fa-heart-pulse"></i></div>
+                    <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--deep-blue); margin-bottom: 15px;">Cardiac Sciences</h3>
+                    <p style="color: var(--gray); font-size: 0.95rem; margin-bottom: 20px;">Dedicated to heart health with advanced Cath Labs, Robotic Heart Surgery, and 24/7 Emergency Cardiac Care.</p>
+                </div>
+                <div class="card" style="padding: 50px 30px; border: none; border-radius: 0; border-bottom: 5px solid var(--gold); box-shadow: 0 15px 40px rgba(0,0,0,0.05); transition: 0.4s; text-align: left;">
+                    <div style="font-size: 3.5rem; color: var(--deep-blue); margin-bottom: 25px; opacity: 0.8;"><i class="fa-solid fa-brain"></i></div>
+                    <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--deep-blue); margin-bottom: 15px;">Neurosciences</h3>
+                    <p style="color: var(--gray); font-size: 0.95rem; margin-bottom: 20px;">Specialized treatment for complex Brain and Spine disorders using Neuronavigation and Micro-surgery techniques.</p>
+                </div>
+                <div class="card" style="padding: 50px 30px; border: none; border-radius: 0; border-bottom: 5px solid var(--gold); box-shadow: 0 15px 40px rgba(0,0,0,0.05); transition: 0.4s; text-align: left;">
+                    <div style="font-size: 3.5rem; color: var(--deep-blue); margin-bottom: 25px; opacity: 0.8;"><i class="fa-solid fa-dna"></i></div>
+                    <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--deep-blue); margin-bottom: 15px;">Cancer Care</h3>
+                    <p style="color: var(--gray); font-size: 0.95rem; margin-bottom: 20px;">Comprehensive Oncology services including Chemotherapy, Linear Accelerator, and Bone Marrow Transplant.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- DOCTORS PAGE -->
+   <div id="doctors-page" class="page">
+    <section class="doctors-hero" style="background: #f8fafc; padding: 100px 5% 50px;">
+        <div style="text-align: center; margin-bottom: 60px;">
+            <span style="color: var(--gold); letter-spacing: 2px; font-weight: 700; font-size: 0.9rem; text-transform: uppercase;">Medical Excellence</span>
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 3.5rem; color: var(--deep-blue); margin: 10px 0;">Meet Our Specialists</h2>
+        </div>
+
+        <!-- Filter Bar -->
+        <div style="display: flex; justify-content: center; align-items: center; background: white; padding: 20px 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 50px; flex-wrap: wrap; gap: 15px;">
+            <div style="display: flex; gap: 15px;">
+                <button class="filter-btn active" style="border: 1px solid #e2e8f0; background: var(--deep-blue); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s;">All</button>
+                <button class="filter-btn" style="border: 1px solid #e2e8f0; background: white; color: var(--gray); padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s;">Cardiology</button>
+                <button class="filter-btn" style="border: 1px solid #e2e8f0; background: white; color: var(--gray); padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s;">Neurology</button>
+                <button class="filter-btn" style="border: 1px solid #e2e8f0; background: white; color: var(--gray); padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s;">Orthopedics</button>
+            </div>
+        </div>
+
+        <!-- Doctors Grid -->
+        <div class="doctors-grid">
+            <!-- Doctor Card 1 -->
+            <div class="doc-card">
+                <div class="doc-img-wrapper">
+                    <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=1000&auto=format&fit=crop" alt="Dr. Aditi Sharma">
+                    <div class="doc-overlay">
+                        <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                    </div>
+                </div>
+                <div style="padding: 25px; text-align: center;">
+                    <div style="display: inline-block; background: #e0f2fe; color: var(--primary); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; margin-bottom: 10px;">Cardiology</div>
+                    <h3 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--deep-blue); margin-bottom: 5px;">Dr. Aditi Sharma</h3>
+                    <p style="color: var(--gold); font-weight: 600; font-size: 0.9rem; margin-bottom: 15px;">Director - Cardiology</p>
+                    <button onclick="showPage('contact-page')" style="width: 100%; padding: 12px; background: transparent; border: 2px solid var(--primary); color: var(--primary); border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='var(--primary)'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='var(--primary)'">Book Appointment</button>
+                </div>
+            </div>
+
+            <!-- Doctor Card 2 -->
+            <div class="doc-card">
+                <div class="doc-img-wrapper">
+                    <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1000&auto=format&fit=crop" alt="Dr. Rohan Mehta">
+                    <div class="doc-overlay">
+                        <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                    </div>
+                </div>
+                <div style="padding: 25px; text-align: center;">
+                    <div style="display: inline-block; background: #e0f2fe; color: var(--primary); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; margin-bottom: 10px;">Neurology</div>
+                    <h3 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--deep-blue); margin-bottom: 5px;">Dr. Rohan Mehta</h3>
+                    <p style="color: var(--gold); font-weight: 600; font-size: 0.9rem; margin-bottom: 15px;">Sr. Consultant - Neurology</p>
+                    <button onclick="showPage('contact-page')" style="width: 100%; padding: 12px; background: transparent; border: 2px solid var(--primary); color: var(--primary); border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='var(--primary)'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='var(--primary)'">Book Appointment</button>
+                </div>
+            </div>
+
+            <!-- Doctor Card 3 -->
+            <div class="doc-card">
+                <div class="doc-img-wrapper">
+                    <img src="https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=1000&auto=format&fit=crop" alt="Dr. Sunita Kapoor">
+                    <div class="doc-overlay">
+                        <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                    </div>
+                </div>
+                <div style="padding: 25px; text-align: center;">
+                    <div style="display: inline-block; background: #e0f2fe; color: var(--primary); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; margin-bottom: 10px;">Oncology</div>
+                    <h3 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--deep-blue); margin-bottom: 5px;">Dr. Sunita Kapoor</h3>
+                    <p style="color: var(--gold); font-weight: 600; font-size: 0.9rem; margin-bottom: 15px;">HOD - Cancer Care</p>
+                    <button onclick="showPage('contact-page')" style="width: 100%; padding: 12px; background: transparent; border: 2px solid var(--primary); color: var(--primary); border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.3s;" onmouseover="this.style.background='var(--primary)'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='var(--primary)'">Book Appointment</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+    <!-- CONTACT PAGE -->
+    <div id="contact-page" class="page">
+        <section class="section" style="background: #f8fafc; padding-bottom: 100px;">
+            <div style="text-align:center; margin-bottom: 40px;">
+                <h2 style="font-family: 'Playfair Display', serif; font-size: 3rem; color: #002e5b;">Get In Touch</h2>
+                <div style="width: 80px; height: 3px; background: #b39359; margin: 15px auto;"></div>
+            </div>
+
+            <div class="contact-container">
+                <div class="contact-info">
+                    <h3 style="font-size: 2rem; margin-bottom: 30px; font-family: 'Playfair Display';">Contact Information</h3>
+                    <div style="margin-bottom: 40px;">
+                        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 25px;">
+                            <i class="fa fa-phone" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 50%; color: #b39359;"></i>
+                            <div><p style="opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">Call Us 24/7</p><p style="font-weight: 600; font-size: 1.1rem;">+91 253 222 4444</p></div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <i class="fa fa-envelope" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 50%; color: #b39359;"></i>
+                            <div><p style="opacity: 0.7; font-size: 0.8rem; text-transform: uppercase;">Email Support</p><p style="font-weight: 600; font-size: 1.1rem;">care@sanjeevani.com</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-form">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Your Name</label>
+                        <input type="text" id="contact-name" placeholder="e.g. Rahul Sharma">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Phone Number</label>
+                        <input type="tel" id="contact-phone" placeholder="+91 XXXXX XXXXX">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Select Department</label>
+                        <select id="contact-dept">
+                            <option>Cardiology (Heart Care)</option>
+                            <option>Neurology (Brain Care)</option>
+                            <option>General Checkup</option>
+                            <option>Emergency Services</option>
+                        </select>
+                    </div>
+                    <button onclick="submitAppointment()" class="btn-portal" style="width: 100%; padding: 18px; border-radius: 15px; background: var(--gold); font-size: 1rem; transition: 0.4s; border:none;">
+                        <i class="fa fa-paper-plane" style="margin-right: 10px;"></i> REQUEST APPOINTMENT
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- LOGIN PAGE -->
+   <div id="login-page" class="page">
+    <div class="login-wrap">
+        <div class="login-box">
+            <i class="fa-solid fa-circle-user" style="font-size: 4rem; color: var(--primary); margin-bottom: 20px;"></i>
+            <h2>Welcome Back</h2>
+            <p style="color: rgba(255,255,255,0.8);">Admin Secure Access Portal</p>
+            
+            <input type="text" id="user" placeholder="Username (admin)">
+            <input type="password" id="pass" placeholder="Password (1234)">
+            
+            <button class="btn-portal" onclick="doLogin()" style="margin-top:10px;">Login to Dashboard</button>
+            
+            <div class="back-home" onclick="showPage('home-page')" style="margin-top: 25px; display: inline-block; color: white; text-decoration: none; font-size: 0.9rem; cursor: pointer; opacity: 0.8;">
+                <i class="fa-solid fa-house"></i> Back to Homepage
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- ADMIN DASHBOARD -->
+    <div id="admin-dashboard" class="page">
+    <div class="admin-layout">
+        <div class="sidebar" id="admin-sidebar">
+            <h3><i class="fa-solid fa-shield-halved"></i> SANJEEVANI</h3>
+            <a onclick="showAdminSec('dash-home', this)" class="active-link"><i class="fa-solid fa-chart-line"></i> Overview</a>
+            <a onclick="showAdminSec('dash-appts', this)"><i class="fa-solid fa-calendar-day"></i> Appointments</a>
+            <a onclick="showAdminSec('dash-docs', this)"><i class="fa-solid fa-user-doctor"></i> Manage Doctors</a>
+            
+            <a onclick="showPage('login-page')" style="margin-top:auto; color:#f87171; background: rgba(255,255,255,0.05);">
+                <i class="fa-solid fa-power-off"></i> Logout
+            </a>
+        </div>
+
+        <div class="main-content">
+            <!-- Mobile Admin Toggle -->
+            <div class="admin-header-toggle" onclick="toggleAdminSidebar()">
+                <i class="fa-solid fa-bars"></i> Menu
+            </div>
+
+            <!-- SECTION 1: OVERVIEW -->
+            <div id="dash-home" class="admin-sec active">
+                <div class="overview-header">
+                    <div>
+                        <h1 style="color: var(--dark); font-size: 2rem; font-weight: 700;">System Overview</h1>
+                        <p style="color: var(--gray);">Welcome back, Admin. Dashboard is up to date.</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="status-badge">
+                            <span class="pulse"></span> Server Online
+                        </div>
+                        <div style="margin-top: 5px;">
+                            <span id="live-clock" style="font-weight: 600; color: var(--dark); font-size: 1.1rem;"></span> 
+                            <span id="live-date" style="color: var(--gray); font-size: 0.9rem; margin-left: 8px;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overview-grid">
+                    <div class="glass-card" style="border-left: 5px solid var(--primary);">
+                        <p style="color: var(--gray); font-weight: 500;">Total Outpatients</p>
+                        <h2 style="font-size: 2.2rem; color: var(--dark); margin: 5px 0;">1,482</h2>
+                        <span style="color: var(--success); font-size: 0.85rem; font-weight: 600;"><i class="fa-solid fa-arrow-up"></i> 12.5%</span>
+                        <i class="fa-solid fa-user-nurse card-icon"></i>
+                    </div>
+
+                    <div class="glass-card" style="border-left: 5px solid var(--success);">
+                        <p style="color: var(--gray); font-weight: 500;">Bed Occupancy</p>
+                        <h2 style="font-size: 2.2rem; color: var(--dark); margin: 5px 0;">84%</h2>
+                        <div style="width: 100%; background: #e2e8f0; height: 8px; border-radius: 10px; margin-top: 10px;">
+                            <div style="width: 84%; background: var(--success); height: 100%; border-radius: 10px;"></div>
+                        </div>
+                        <i class="fa-solid fa-bed card-icon"></i>
+                    </div>
+
+                    <div class="glass-card" style="border-left: 5px solid var(--warning);">
+                        <p style="color: var(--gray); font-weight: 500;">Today's Surgeries</p>
+                        <h2 style="font-size: 2.2rem; color: var(--dark); margin: 5px 0;">24</h2>
+                        <span style="color: var(--gray); font-size: 0.85rem;">8 Done | <b style="color:var(--dark)">16 Pending</b></span>
+                        <i class="fa-solid fa-stethoscope card-icon"></i>
+                    </div>
+
+                    <div class="glass-card" style="border-left: 5px solid var(--danger);">
+                        <p style="color: var(--gray); font-weight: 500;">Emergency Alerts</p>
+                        <h2 style="font-size: 2.2rem; color: var(--danger); margin: 5px 0;">03</h2>
+                        <span style="color: var(--danger); font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">Urgent Response</span>
+                        <i class="fa-solid fa-truck-medical card-icon"></i>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; @media (max-width: 768px){ grid-template-columns: 1fr; }">
+                    <div class="glass-card">
+                        <h3 style="margin-bottom: 10px; color: var(--dark);">Weekly Patient Flow</h3>
+                        <div class="chart-container">
+                            <div class="bar-group"><div class="bar" style="height: 40%;"></div><span>Mon</span></div>
+                            <div class="bar-group"><div class="bar" style="height: 60%;"></div><span>Tue</span></div>
+                            <div class="bar-group"><div class="bar active" style="height: 85%;"></div><span>Wed</span></div>
+                            <div class="bar-group"><div class="bar" style="height: 45%;"></div><span>Thu</span></div>
+                            <div class="bar-group"><div class="bar active" style="height: 95%;"></div><span>Fri</span></div>
+                            <div class="bar-group"><div class="bar" style="height: 30%;"></div><span>Sat</span></div>
+                            <div class="bar-group"><div class="bar" style="height: 55%;"></div><span>Sun</span></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card" style="background: var(--sidebar-bg); color: white;">
+                        <h3 style="margin-bottom: 20px; color: #38bdf8;">Quick Actions</h3>
+                        <button class="btn-portal" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); width:100%; margin-bottom:10px; text-align:left;">
+                            <i class="fa-solid fa-file-export"></i> Generate Report
+                        </button>
+                        <button class="btn-portal" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); width:100%; margin-bottom:10px; text-align:left;">
+                            <i class="fa-solid fa-users-gear"></i> Staff Meeting
+                        </button>
+                        <button class="btn-portal" style="background: var(--danger); color: white; width:100%; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); text-align:left;">
+                            <i class="fa-solid fa-tower-broadcast"></i> Broadcast Alert
+                        </button>
+                        
+                        <div style="margin-top: 25px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 12px;">
+                            <p style="font-size: 0.8rem; opacity: 0.8;">Admin Note:</p>
+                            <p style="font-size: 0.85rem; margin-top: 5px;">Dr. Sharma is on leave today. Dr. Mehta is covering.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: APPOINTMENTS -->
+            <div id="dash-appts" class="admin-sec">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                    <h1 style="color: var(--dark);">Live Appointments</h1>
+                    <button class="btn-portal" style="padding: 10px 20px;">+ New Slot</button>
+                </div>
+                <div class="table-responsive">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Patient</th>
+                                    <th>Department</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="appts-body">
+                                <tr>
+                                    <td>10:30 AM</td>
+                                    <td>Rahul Verma <br> <small style="color:#94a3b8">+91 98765 43210</small></td>
+                                    <td>Cardiology</td>
+                                    <td><span class="status-pill status-active">In-Consult</span></td>
+                                    <td><button style="color:var(--danger); background:none; border:none; cursor:pointer; font-size:1.1rem;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: DOCTORS -->
+            <div id="dash-docs" class="admin-sec">
+                <h1 style="margin-bottom:25px;">Medical Staff Management</h1>
+                <div class="grid" style="margin-top:20px;">
+                    <div class="card" style="padding:20px; text-align:center;">
+                        <img src="https://randomuser.me/api/portraits/women/44.jpg" style="width:80px; border-radius:50%; margin-bottom:15px;">
+                        <h4>Dr. Aditi Sharma</h4>
+                        <p style="color:var(--gray); font-size:0.9rem;">Cardiology</p>
+                        <button class="btn-portal" style="padding:8px 20px; font-size:0.8rem; margin-top:10px;">Edit Profile</button>
+                    </div>
+                    <div class="card" style="padding:20px; text-align:center;">
+                         <img src="https://randomuser.me/api/portraits/men/32.jpg" style="width:80px; border-radius:50%; margin-bottom:15px;">
+                        <h4>Dr. Rohan Mehta</h4>
+                        <p style="color:var(--gray); font-size:0.9rem;">Neurology</p>
+                        <button class="btn-portal" style="padding:8px 20px; font-size:0.8rem; margin-top:10px;">Edit Profile</button>
+                    </div>
+                    <div class="card" style="padding:20px; text-align:center; border: 2px dashed #cbd5e1; background:transparent; display:flex; align-items:center; justify-content:center; min-height:200px; cursor:pointer;">
+                        <div>
+                            <i class="fa-solid fa-plus" style="font-size:2rem; color:var(--gray);"></i>
+                            <p style="margin-top:10px; font-weight:600; color:var(--gray);">Add New Doctor</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+    <!-- FOOTER -->
+    <footer id="site-footer" class="premium-footer">
+      <div class="footer-box">
+        <div class="footer-left">
+          <div class="footer-brand">
+            <i class="fa-solid fa-notes-medical"></i>
+            <span>Sanjeevani <span>Care</span></span>
+          </div>
+          <p>
+            Delivering trusted healthcare solutions with advanced technology,
+            compassionate care, and 24×7 emergency support.
+          </p>
+          <div class="footer-social">
+            <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="#"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+            <a href="#"><i class="fa-brands fa-twitter"></i></a>
+          </div>
+        </div>
+        <div class="footer-links">
+          <div>
+            <h4>Company</h4>
+            <a onclick="showPage('about-page')">About</a>
+            <a onclick="showPage('services-page')">Services</a>
+            <a onclick="showPage('doctors-page')">Doctors</a>
+            <a onclick="showPage('contact-page')">Contact</a>
+          </div>
+          <div>
+            <h4>Departments</h4>
+            <a onclick="showPage('services-page')">Cardiology</a>
+            <a onclick="showPage('services-page')">Neurology</a>
+            <a onclick="showPage('services-page')">Orthopaedics</a>
+            <a onclick="showPage('services-page')">Emergency</a>
+          </div>
+          <div>
+            <h4>Support</h4>
+            <a href="#">Help Center</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms</a>
+            <a onclick="showPage('contact-page')">24×7 Care</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-strip">
+        © 2026 Sanjeevani Care Hospital — Trusted Healthcare Partner
+      </div>
+    </footer>
+
+    <script>
+        // --- 1. Toast Notification System ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icon = type === 'success' ? '<i class="fa-solid fa-check-circle" style="color:var(--success)"></i>' : '<i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i>';
+            
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- 2. Page Navigation ---
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+
+            const header = document.getElementById('site-header');
+            const footer = document.getElementById('site-footer');
+
+            if(pageId === 'admin-dashboard' || pageId === 'login-page') {
+                header.style.display = 'none';
+                footer.style.display = 'none';
+            } else {
+                header.style.display = 'flex';
+                footer.style.display = 'block';
+            }
+            window.scrollTo(0,0);
+            
+            // Close mobile menu if open
+            const nav = document.getElementById('main-nav');
+            if(nav.classList.contains('active')) {
+                nav.classList.remove('active');
+            }
+        }
+        
+        // Wrapper for nav links to handle closing mobile menu
+        function navigate(pageId) {
+            showPage(pageId);
+            // menu is closed inside showPage via class removal if needed
+            // but explicit close logic handled in showPage for cleanliness
+        }
+
+        // --- 3. Mobile Menu Toggle ---
+        function toggleMobileMenu() {
+            const nav = document.getElementById('main-nav');
+            nav.classList.toggle('active');
+        }
+
+        // --- 4. Admin Sidebar Toggle ---
+        function toggleAdminSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+            sidebar.classList.toggle('mobile-active');
+        }
+
+        // --- 5. Admin Sidebar Switcher ---
+        function showAdminSec(secId, btn) {
+            document.querySelectorAll('.admin-sec').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active-link'));
+            document.getElementById(secId).classList.add('active');
+            if(btn) btn.classList.add('active-link');
+            
+            // On mobile, close sidebar after selection
+            if(window.innerWidth <= 768) {
+                const sidebar = document.getElementById('admin-sidebar');
+                sidebar.classList.remove('mobile-active');
+            }
+        }
+
+        // --- 6. Login Logic ---
+        function doLogin() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            
+            if(u === 'admin' && p === '1234') {
+                showToast('Login Successful! Redirecting...', 'success');
+                setTimeout(() => showPage('admin-dashboard'), 1000);
+                
+                // Initialize Clock
+                setInterval(updateClock, 1000);
+                updateClock();
+            } else {
+                showToast('Invalid Credentials! Try admin / 1234', 'error');
+            }
+        }
+
+        // --- 7. Clock Logic ---
+        function updateClock() {
+            const now = new Date();
+            const clockEl = document.getElementById('live-clock');
+            const dateEl = document.getElementById('live-date');
+            
+            if(clockEl && dateEl) {
+                clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                dateEl.innerText = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            }
+        }
+
+        // --- 8. Working Appointment Request ---
+        function submitAppointment() {
+            const nameInput = document.getElementById('contact-name');
+            const phoneInput = document.getElementById('contact-phone');
+            const deptInput = document.getElementById('contact-dept');
+            
+            const name = nameInput.value;
+            const phone = phoneInput.value;
+            const dept = deptInput.value;
+
+            if (name === "" || phone === "") {
+                showToast("Please fill in your Name and Phone!", "error");
+                return;
+            }
+
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            setTimeout(() => {
+                const tableBody = document.querySelector('#appts-body');
+                const newRow = `
+                    <tr>
+                        <td>Just Now</td>
+                        <td>${name} <br> <small style="color:#94a3b8">${phone}</small></td>
+                        <td>${dept}</td>
+                        <td><span class="status-pill status-new">New Request</span></td>
+                        <td><button style="color:var(--danger); background:none; border:none; cursor:pointer; font-size:1.1rem;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+                tableBody.insertAdjacentHTML('afterbegin', newRow);
+
+                showToast("Success! Appointment request sent to Admin.");
+                
+                nameInput.value = "";
+                phoneInput.value = "";
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                showPage('home-page');
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
